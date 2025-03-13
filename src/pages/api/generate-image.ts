@@ -1,8 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import OpenAI from "openai";
+import { HfInference } from "@huggingface/inference";
 
-// Initializes OpenAI client from the API key
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Initialize Hugging Face Inference from the API key
+const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -16,16 +16,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // This calls OpenAI's DALL·E 2 to generate an image from the story
-    const response = await openai.images.generate({
-      model: "dall-e-2",
-      prompt: story,
-      size: "512x512",
+    // This calls Hugging Face's FLUX.1-dev from the story
+    const response = await hf.textToImage({
+      model: "stabilityai/stable-diffusion-2",
+      inputs: `Create a cartoon image based off this story: ${story}`,
+      parameters: { num_inference_steps: 20 },
     });
 
-    // Sends the image URL back
-    const imageUrl = response.data[0].url;
-    res.status(200).json({ imageUrl });
+    // Checks whether the response is an image data
+    if (response instanceof Blob) {
+      // Converts to Base64 string
+      const buffer = await response.arrayBuffer();
+      const base64Image = Buffer.from(buffer).toString("base64");
+      const imageUrl = `data:image/png;base64,${base64Image}`;
+
+      // Sends the image URL back
+      res.status(200).json({ imageUrl });
+    } else {
+      throw new Error("No image returned.");
+    }
   } catch (error) {
     console.error("Error generating image:", error);
     res.status(500).json({ error: "Failed to generate image" });
