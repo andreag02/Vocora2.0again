@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     // This calls Hugging Face's FLUX.1-dev from the story
     const response = await hf.textToImage({
-      model: "stabilityai/stable-diffusion-2",
+      model: "black-forest-labs/FLUX.1-dev",
       inputs: `Create a cartoon image based off this story: ${story}`,
       parameters: { num_inference_steps: 20 },
     });
